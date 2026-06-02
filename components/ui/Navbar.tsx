@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, CreditCard, Brain, Timer, AlertCircle, CheckSquare, LayoutDashboard, ListChecks } from "lucide-react";
+import { BookOpen, CreditCard, Brain, Timer, AlertCircle, CheckSquare, LayoutDashboard, ListChecks, Trophy } from "lucide-react";
+import { LevelBadge } from "./LevelBadge";
 
 const NAV = [
   { href: "/", label: "Дашборд", icon: LayoutDashboard },
@@ -9,6 +10,7 @@ const NAV = [
   { href: "/lessons", label: "Уроки", icon: BookOpen },
   { href: "/flashcards", label: "Карточки", icon: CreditCard },
   { href: "/exercises", label: "Упражнения", icon: Brain },
+  { href: "/achievements", label: "Достижения", icon: Trophy },
   { href: "/timer", label: "Pomodoro", icon: Timer },
   { href: "/error-journal", label: "Ошибки", icon: AlertCircle },
   { href: "/checklist", label: "Чек-лист", icon: CheckSquare },
@@ -43,6 +45,9 @@ export function Navbar() {
             </Link>
           );
         })}
+      </div>
+      <div className="p-3 border-t border-slate-800">
+        <LevelBadge compact />
       </div>
     </nav>
   );

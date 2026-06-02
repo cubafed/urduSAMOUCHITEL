@@ -7,6 +7,7 @@ import { GrammarCard } from "@/components/ui/GrammarCard";
 import { UrduText } from "@/components/ui/UrduText";
 import { ExerciseBlock } from "@/components/ui/ExerciseBlock";
 import { AudioButton } from "@/components/ui/AudioButton";
+import { fireConfetti } from "@/components/ui/Confetti";
 import { BookmarkPlus, CheckCircle } from "lucide-react";
 
 type Params = Promise<{ course: string; number: string }>;
@@ -50,7 +51,7 @@ export default function LessonPage({ params }: { params: Params }) {
             </div>
           ) : (
             <button
-              onClick={() => completeLesson(lesson.id)}
+              onClick={() => { completeLesson(lesson.id); fireConfetti(); }}
               className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400 transition-colors"
             >
               Отметить пройденным

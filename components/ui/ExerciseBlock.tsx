@@ -3,13 +3,18 @@ import { useState } from "react";
 import type { Exercise } from "@/data/lessons";
 import { useProgress } from "@/store/progress";
 import { AudioButton } from "./AudioButton";
-import { CheckCircle, XCircle } from "lucide-react";
+import { UrduKeyboard } from "./UrduKeyboard";
+import { CheckCircle, XCircle, Keyboard, Lightbulb } from "lucide-react";
 
 export function ExerciseBlock({ exercise, lessonId }: { exercise: Exercise; lessonId: string }) {
   const [input, setInput] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const { completeExercise, addError } = useProgress();
+
+  const isUrduAnswer = exercise.type === "ru_to_urdu";
 
   const isCorrect =
     exercise.type === "choose"
@@ -30,13 +35,26 @@ export function ExerciseBlock({ exercise, lessonId }: { exercise: Exercise; less
   };
 
   const isUrduPrompt = /[؀-ۿ]/.test(exercise.prompt);
+  // Подсказка: первая буква/слово ответа
+  const hint = isUrduAnswer
+    ? exercise.answer.slice(0, 2) + "…"
+    : exercise.answer.split(" ")[0] + "…";
 
   return (
     <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4 space-y-3">
-      <div className="flex items-start gap-2">
-        <span className="text-xs text-amber-400/60 uppercase tracking-widest mt-1">
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-amber-400/60 uppercase tracking-widest">
           {exercise.type === "urdu_to_ru" ? "урду → рус" : exercise.type === "ru_to_urdu" ? "рус → урду" : "выбор"}
         </span>
+        {!submitted && exercise.type !== "choose" && (
+          <button
+            onClick={() => setShowHint(true)}
+            className="flex items-center gap-1 text-xs text-slate-500 hover:text-amber-400 transition-colors"
+            title="Подсказка (−5 XP в уме)"
+          >
+            <Lightbulb size={14} /> Подсказка
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -49,6 +67,15 @@ export function ExerciseBlock({ exercise, lessonId }: { exercise: Exercise; less
           {exercise.prompt}
         </p>
       </div>
+
+      {showHint && !submitted && (
+        <p className="text-sm text-amber-300/70">
+          Начни так:{" "}
+          <span dir={isUrduAnswer ? "rtl" : "ltr"} style={isUrduAnswer ? { fontFamily: "'Noto Nastaliq Urdu', serif" } : {}}>
+            {hint}
+          </span>
+        </p>
+      )}
 
       {exercise.type === "choose" && exercise.options ? (
         <div className="grid grid-cols-2 gap-2">
@@ -74,17 +101,39 @@ export function ExerciseBlock({ exercise, lessonId }: { exercise: Exercise; less
           ))}
         </div>
       ) : (
-        <input
-          type="text"
-          dir={exercise.type === "ru_to_urdu" ? "rtl" : "ltr"}
-          disabled={submitted}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !submitted && handleSubmit()}
-          placeholder={exercise.type === "ru_to_urdu" ? "Введите на урду..." : "Введите перевод..."}
-          className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
-          style={exercise.type === "ru_to_urdu" ? { fontFamily: "'Noto Nastaliq Urdu', serif", fontSize: "1.2rem" } : {}}
-        />
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              dir={isUrduAnswer ? "rtl" : "ltr"}
+              disabled={submitted}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !submitted && handleSubmit()}
+              placeholder={isUrduAnswer ? "Введите на урду..." : "Введите перевод..."}
+              className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
+              style={isUrduAnswer ? { fontFamily: "'Noto Nastaliq Urdu', serif", fontSize: "1.2rem" } : {}}
+            />
+            {isUrduAnswer && !submitted && (
+              <button
+                onClick={() => setShowKeyboard((k) => !k)}
+                className={`px-3 rounded-lg border transition-colors ${
+                  showKeyboard ? "border-amber-500 bg-amber-500/20 text-amber-300" : "border-slate-600 text-slate-400 hover:text-amber-400"
+                }`}
+                title="Урду-клавиатура"
+              >
+                <Keyboard size={18} />
+              </button>
+            )}
+          </div>
+          {isUrduAnswer && showKeyboard && !submitted && (
+            <UrduKeyboard
+              onKey={(ch) => setInput((v) => v + ch)}
+              onBackspace={() => setInput((v) => v.slice(0, -1))}
+              onSpace={() => setInput((v) => v + " ")}
+            />
+          )}
+        </div>
       )}
 
       {!submitted ? (
@@ -98,7 +147,7 @@ export function ExerciseBlock({ exercise, lessonId }: { exercise: Exercise; less
       ) : (
         <div className={`flex items-center gap-2 text-sm font-medium ${isCorrect ? "text-green-400" : "text-red-400"}`}>
           {isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
-          {isCorrect ? "Верно!" : (
+          {isCorrect ? "Верно! +10 XP" : (
             <span>
               Правильный ответ:{" "}
               <span

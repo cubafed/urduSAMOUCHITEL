@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useProgress, CHECKLIST_ITEMS } from "@/store/progress";
 import { mainLessons, introLessons } from "@/data/lessons";
 import { BookOpen, CreditCard, Brain, Timer, Flame, Star, AlertCircle } from "lucide-react";
+import { LevelBadge } from "@/components/ui/LevelBadge";
+import { DailyGoalRing } from "@/components/ui/DailyGoalRing";
 
 export default function Dashboard() {
   const { completedLessons, xp, streak, pomodoroCount, cards, errors, checklistItems } = useProgress();
@@ -31,6 +33,11 @@ export default function Dashboard() {
         >
           خوش آمدید
         </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <LevelBadge />
+        <DailyGoalRing />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
