@@ -1,5 +1,9 @@
 "use client";
 
+if (typeof window !== "undefined" && "speechSynthesis" in window) {
+  void loadVoices();
+}
+
 export function speakUrdu(text: string): void {
   if (typeof window === "undefined") return;
   if (!("speechSynthesis" in window)) return;

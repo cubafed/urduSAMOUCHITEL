@@ -8,7 +8,8 @@ import { UrduText } from "@/components/ui/UrduText";
 import { ExerciseBlock } from "@/components/ui/ExerciseBlock";
 import { AudioButton } from "@/components/ui/AudioButton";
 import { fireConfetti } from "@/components/ui/Confetti";
-import { BookmarkPlus, CheckCircle } from "lucide-react";
+import { BookmarkPlus, Check, CheckCircle } from "lucide-react";
+import { LessonPerfectWatcher } from "@/components/LessonPerfectWatcher";
 
 type Params = Promise<{ course: string; number: string }>;
 
@@ -21,7 +22,7 @@ export default function LessonPage({ params }: { params: Params }) {
   const [showTranslit, setShowTranslit] = useState(true);
   const [showTranslation, setShowTranslation] = useState(false);
 
-  const { completedLessons, completeLesson, addCard } = useProgress();
+  const { completedLessons, completeLesson, addCard, hasCard } = useProgress();
 
   const all = [...introLessons, ...mainLessons];
   const lesson = all.find(
@@ -31,7 +32,7 @@ export default function LessonPage({ params }: { params: Params }) {
   if (!lesson) return notFound();
 
   const completed = completedLessons[lesson.id];
-  const doneExercises = lesson.exercises.filter((e) => false).length; // tracked via store
+  const exerciseIds = lesson.exercises.map((e) => e.id);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -173,10 +174,22 @@ export default function LessonPage({ params }: { params: Params }) {
                     lessonId: lesson.id,
                   })
                 }
-                className="p-1.5 text-slate-500 hover:text-amber-400 transition-colors"
-                title="Добавить в карточки"
+                className={`p-1.5 transition-colors ${
+                  hasCard(`${lesson.id}-${i}`)
+                    ? "text-green-400"
+                    : "text-slate-500 hover:text-amber-400"
+                }`}
+                title={
+                  hasCard(`${lesson.id}-${i}`)
+                    ? "Уже в карточках"
+                    : "Добавить в карточки"
+                }
               >
-                <BookmarkPlus size={16} />
+                {hasCard(`${lesson.id}-${i}`) ? (
+                  <Check size={16} />
+                ) : (
+                  <BookmarkPlus size={16} />
+                )}
               </button>
             </div>
           ))}
@@ -186,8 +199,9 @@ export default function LessonPage({ params }: { params: Params }) {
       {/* Exercises */}
       {tab === "Задания" && (
         <div className="space-y-4">
+          <LessonPerfectWatcher lessonId={lesson.id} exerciseIds={exerciseIds} />
           <p className="text-sm text-slate-400">
-            Выполни все задания. Ошибки автоматически попадут в журнал.
+            Выполни все задания без ошибок — получишь +25 XP и достижение «Без единой ошибки».
           </p>
           {lesson.exercises.map((ex) => (
             <ExerciseBlock key={ex.id} exercise={ex} lessonId={lesson.id} />

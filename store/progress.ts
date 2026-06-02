@@ -30,6 +30,7 @@ export type ProgressStore = {
   // Lessons & exercises
   completedLessons: Record<string, boolean>;
   completedExercises: Record<string, boolean>;
+  exerciseResults: Record<string, boolean>;
   perfectLessons: Record<string, boolean>;
   exercisesCorrect: number;
   exercisesTotal: number;
@@ -47,6 +48,9 @@ export type ProgressStore = {
 
   // Flashcards (Leitner)
   cards: LeitnerCard[];
+  cardsReviewedTotal: number;
+  flashcardSessionsCompleted: number;
+  bestFlashcardCombo: number;
 
   // Error journal
   errors: ErrorEntry[];
@@ -59,14 +63,20 @@ export type ProgressStore = {
 
   // Achievements
   unlockedAchievements: Record<string, number>; // id -> timestamp
-  newlyUnlocked: string[]; // queue for toast display
+  newlyUnlocked: string[]; // queue for toast display (not persisted)
 
   // Actions
   completeLesson: (lessonId: string) => void;
   completeExercise: (exerciseId: string, correct: boolean) => void;
   markPerfectLesson: (lessonId: string) => void;
-  addCard: (card: Omit<LeitnerCard, "box" | "nextReview">) => void;
-  reviewCard: (cardId: string, correct: boolean) => void;
+  addCard: (card: Omit<LeitnerCard, "box" | "nextReview">) => boolean;
+  hasCard: (id: string) => boolean;
+  reviewCard: (cardId: string, correct: boolean) => number;
+  completeFlashcardSession: (
+    reviewed: number,
+    correct: number,
+    bestCombo: number
+  ) => number;
   addError: (entry: Omit<ErrorEntry, "id" | "createdAt">) => void;
   removeError: (id: string) => void;
   toggleChecklist: (key: string) => void;
@@ -82,6 +92,9 @@ const BOX_INTERVALS: Record<number, number> = {
   3: 3 * 24 * 60 * 60 * 1000,  // 3 days
   4: 7 * 24 * 60 * 60 * 1000,  // 7 days
 };
+
+const XP_CORRECT_CARD = 3;
+const XP_WRONG_CARD = 1;
 
 export const CHECKLIST_ITEMS = [
   { key: "reading", label: "Бегло читаю письмо урду вслух" },
@@ -103,6 +116,9 @@ function buildStats(s: ProgressStore): AchievementStats {
     exercisesCorrect: s.exercisesCorrect,
     exercisesTotal: s.exercisesTotal,
     cardsMastered: s.cards.filter((c) => c.box === 4).length,
+    cardsReviewedTotal: s.cardsReviewedTotal,
+    flashcardSessionsCompleted: s.flashcardSessionsCompleted,
+    bestFlashcardCombo: s.bestFlashcardCombo,
     pomodoroCount: s.pomodoroCount,
     perfectLessons: Object.values(s.perfectLessons).filter(Boolean).length,
     errorsFixed: s.errorsFixed,
@@ -110,11 +126,19 @@ function buildStats(s: ProgressStore): AchievementStats {
   };
 }
 
+function sessionBonusXp(reviewed: number, correct: number): number {
+  if (reviewed < 3) return 0;
+  const accuracyBonus = correct === reviewed ? 15 : correct >= reviewed * 0.8 ? 10 : 5;
+  const volumeBonus = reviewed >= 20 ? 10 : reviewed >= 10 ? 5 : 0;
+  return accuracyBonus + volumeBonus;
+}
+
 export const useProgress = create<ProgressStore>()(
   persist(
     (set, get) => ({
       completedLessons: {},
       completedExercises: {},
+      exerciseResults: {},
       perfectLessons: {},
       exercisesCorrect: 0,
       exercisesTotal: 0,
@@ -126,19 +150,20 @@ export const useProgress = create<ProgressStore>()(
       todayXp: 0,
       dailyGoalsHit: 0,
       cards: [],
+      cardsReviewedTotal: 0,
+      flashcardSessionsCompleted: 0,
+      bestFlashcardCombo: 0,
       errors: [],
       checklistItems: {},
       pomodoroCount: 0,
       unlockedAchievements: {},
       newlyUnlocked: [],
 
-      // Начисление XP + учёт дневной цели + стрик. Возвращает patch.
       _award: (gainedXp) => {
         const s = get();
         const today = new Date().toDateString();
         const yesterday = new Date(Date.now() - 86400000).toDateString();
 
-        // Стрик
         const newStreak =
           s.lastStudyDate === today
             ? s.streak
@@ -146,7 +171,6 @@ export const useProgress = create<ProgressStore>()(
             ? s.streak + 1
             : 1;
 
-        // Дневная цель
         const isNewDay = s.todayDate !== today;
         const prevTodayXp = isNewDay ? 0 : s.todayXp;
         const newTodayXp = prevTodayXp + gainedXp;
@@ -197,10 +221,11 @@ export const useProgress = create<ProgressStore>()(
         const already = get().completedExercises[exerciseId];
         set((s) => ({
           completedExercises: { ...s.completedExercises, [exerciseId]: true },
+          exerciseResults: { ...s.exerciseResults, [exerciseId]: correct },
           exercisesTotal: already ? s.exercisesTotal : s.exercisesTotal + 1,
           exercisesCorrect:
             correct && !already ? s.exercisesCorrect + 1 : s.exercisesCorrect,
-          ...(correct ? get()._award(10) : {}),
+          ...(correct ? get()._award(10) : get()._award(1)),
         }));
         get()._checkAchievements();
       },
@@ -214,28 +239,54 @@ export const useProgress = create<ProgressStore>()(
         get()._checkAchievements();
       },
 
+      hasCard: (id) => !!get().cards.find((c) => c.id === id),
+
       addCard: (card) => {
-        if (get().cards.find((c) => c.id === card.id)) return;
+        if (get().cards.find((c) => c.id === card.id)) return false;
         set((s) => ({
           cards: [...s.cards, { ...card, box: 1, nextReview: Date.now() }],
         }));
+        return true;
       },
 
       reviewCard: (cardId, correct) => {
+        const xpGain = correct ? XP_CORRECT_CARD : XP_WRONG_CARD;
         set((s) => ({
           cards: s.cards.map((c) => {
             if (c.id !== cardId) return c;
-            const newBox = correct ? (Math.min(c.box + 1, 4) as 1 | 2 | 3 | 4) : 1;
-            return { ...c, box: newBox, nextReview: Date.now() + BOX_INTERVALS[newBox] };
+            const newBox = correct
+              ? (Math.min(c.box + 1, 4) as 1 | 2 | 3 | 4)
+              : 1;
+            return {
+              ...c,
+              box: newBox,
+              nextReview: Date.now() + BOX_INTERVALS[newBox],
+            };
           }),
-          ...(correct ? get()._award(2) : {}),
+          cardsReviewedTotal: s.cardsReviewedTotal + 1,
+          ...get()._award(xpGain),
         }));
         get()._checkAchievements();
+        return xpGain;
+      },
+
+      completeFlashcardSession: (reviewed, correct, bestCombo) => {
+        const bonus = sessionBonusXp(reviewed, correct);
+        set((s) => ({
+          flashcardSessionsCompleted: s.flashcardSessionsCompleted + 1,
+          bestFlashcardCombo: Math.max(s.bestFlashcardCombo, bestCombo),
+          ...(bonus > 0 ? get()._award(bonus) : {}),
+        }));
+        get()._checkAchievements();
+        return bonus;
       },
 
       addError: (entry) => {
         set((s) => ({
-          errors: [{ ...entry, id: crypto.randomUUID(), createdAt: Date.now() }, ...s.errors],
+          errors: [
+            { ...entry, id: crypto.randomUUID(), createdAt: Date.now() },
+            ...s.errors,
+          ],
         }));
       },
 
@@ -254,7 +305,10 @@ export const useProgress = create<ProgressStore>()(
       },
 
       incrementPomodoro: () => {
-        set((s) => ({ pomodoroCount: s.pomodoroCount + 1 }));
+        set((s) => ({
+          pomodoroCount: s.pomodoroCount + 1,
+          ...get()._award(5),
+        }));
         get()._checkAchievements();
       },
 
@@ -262,6 +316,14 @@ export const useProgress = create<ProgressStore>()(
         set((s) => ({ newlyUnlocked: s.newlyUnlocked.filter((x) => x !== id) }));
       },
     }),
-    { name: "urdu-progress" }
+    {
+      name: "urdu-progress",
+      partialize: (state) => {
+        // newlyUnlocked — только для UI, не сохраняем в localStorage
+        const { newlyUnlocked, ...rest } = state;
+        void newlyUnlocked;
+        return rest as ProgressStore;
+      },
+    }
   )
 );

@@ -149,7 +149,7 @@ export function ExerciseBlock({ exercise, lessonId }: { exercise: Exercise; less
           {isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
           {isCorrect ? "Верно! +10 XP" : (
             <span>
-              Правильный ответ:{" "}
+              +1 XP за попытку · правильный ответ:{" "}
               <span
                 dir={/[؀-ۿ]/.test(exercise.answer) ? "rtl" : "ltr"}
                 style={/[؀-ۿ]/.test(exercise.answer) ? { fontFamily: "'Noto Nastaliq Urdu', serif" } : {}}

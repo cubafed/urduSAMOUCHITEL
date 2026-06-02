@@ -58,6 +58,9 @@ export type AchievementStats = {
   exercisesCorrect: number;
   exercisesTotal: number;
   cardsMastered: number;   // карточки в коробке 4
+  cardsReviewedTotal: number;
+  flashcardSessionsCompleted: number;
+  bestFlashcardCombo: number;
   pomodoroCount: number;
   perfectLessons: number;  // уроки без ошибок в заданиях
   errorsFixed: number;     // удалённые из журнала (проработанные)
@@ -77,6 +80,10 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "master", title: "Устад", description: "Достигни 10 уровня", icon: "🎓", check: (s) => s.xp >= 3300 },
   { id: "perfect-lesson", title: "Без единой ошибки", description: "Пройди урок со 100% заданий", icon: "💯", check: (s) => s.perfectLessons >= 1 },
   { id: "ten-cards", title: "Долгая память", description: "Доведи 10 карточек до коробки 4", icon: "🧠", check: (s) => s.cardsMastered >= 10 },
+  { id: "first-review", title: "Первая карточка", description: "Повтори любую карточку", icon: "🃏", check: (s) => s.cardsReviewedTotal >= 1 },
+  { id: "cards-50", title: "Память нарастает", description: "Повтори 50 карточек", icon: "📚", check: (s) => s.cardsReviewedTotal >= 50 },
+  { id: "flashcard-session", title: "Марафон карточек", description: "Заверши 5 сессий повторений", icon: "🎴", check: (s) => s.flashcardSessionsCompleted >= 5 },
+  { id: "combo-5", title: "Серия знаний", description: "5 правильных карточек подряд в одной сессии", icon: "🔥", check: (s) => s.bestFlashcardCombo >= 5 },
   { id: "pomodoro-10", title: "Фокус", description: "Заверши 10 сессий Pomodoro", icon: "🍅", check: (s) => s.pomodoroCount >= 10 },
   { id: "error-master", title: "Работа над ошибками", description: "Проработай 10 ошибок из журнала", icon: "🔧", check: (s) => s.errorsFixed >= 10 },
   { id: "daily-7", title: "Дисциплина", description: "Выполни дневную цель 7 раз", icon: "📅", check: (s) => s.dailyGoalsHit >= 7 },
