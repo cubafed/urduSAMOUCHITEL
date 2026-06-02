@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { useProgress, CHECKLIST_ITEMS } from "@/store/progress";
 import { mainLessons, introLessons } from "@/data/lessons";
@@ -7,13 +8,24 @@ import { LevelBadge } from "@/components/ui/LevelBadge";
 import { DailyGoalRing } from "@/components/ui/DailyGoalRing";
 
 export default function Dashboard() {
-  const { completedLessons, xp, streak, pomodoroCount, cards, errors, checklistItems } = useProgress();
+  const {
+    completedLessons,
+    xp,
+    streak,
+    pomodoroCount,
+    cards,
+    errors,
+    checklistItems,
+    cardsReviewedTotal,
+    bestFlashcardCombo,
+  } = useProgress();
 
   const totalLessons = introLessons.length + mainLessons.length;
   const done = Object.values(completedLessons).filter(Boolean).length;
   const pct = Math.round((done / totalLessons) * 100);
   const checkDone = CHECKLIST_ITEMS.filter((i) => checklistItems[i.key]).length;
-  const dueCards = cards.filter((c) => c.nextReview <= Date.now()).length;
+  const [dueNow] = useState(() => Date.now());
+  const dueCards = cards.filter((c) => c.nextReview <= dueNow).length;
 
   const allLessons = [...introLessons, ...mainLessons];
   const nextLesson = allLessons.find((l) => !completedLessons[l.id]);
@@ -82,8 +94,18 @@ export default function Dashboard() {
         >
           <p className="text-sm text-blue-400/70 uppercase tracking-widest mb-1">Карточки на сегодня</p>
           <h2 className="text-xl font-bold text-white">{dueCards} карточек ждут повторения</h2>
-          <p className="text-slate-400 text-sm mt-1">Интервальные повторения · Система Лейтнера</p>
+          <p className="text-slate-400 text-sm mt-1">
+            Интервальные повторения · +3 XP за «Знал» · бонус за сессию
+            {bestFlashcardCombo >= 3 && ` · рекорд серии: ${bestFlashcardCombo}`}
+          </p>
         </Link>
+      )}
+
+      {cards.length > 0 && dueCards === 0 && (
+        <p className="text-sm text-slate-500 text-center">
+          Всего повторений карточек: {cardsReviewedTotal} · в долгой памяти:{" "}
+          {cards.filter((c) => c.box === 4).length}
+        </p>
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
