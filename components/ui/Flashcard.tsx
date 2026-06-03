@@ -18,10 +18,11 @@ export function Flashcard({ front, back, translit, onCorrect, onWrong }: Props) 
       <div
         className="w-full max-w-md min-h-[180px] cursor-pointer"
         onClick={() => setFlipped((f) => !f)}
+        style={{ perspective: "1000px" }}
       >
         <div
-          className={`relative w-full min-h-[180px] transition-all duration-500`}
-          style={{ transformStyle: "preserve-3d", transform: flipped ? "rotateY(180deg)" : "none" }}
+          className={`relative w-full min-h-[180px] transition-transform duration-500`}
+          style={{ transformStyle: "preserve-3d", transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
         >
           {/* Front */}
           <div
