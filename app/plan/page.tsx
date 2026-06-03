@@ -258,10 +258,10 @@ export default function PlanPage() {
 
                   {item.day === 16 && (
                     <Link
-                      href="/exercises"
+                      href="/exam"
                       className="mt-3 inline-block text-xs px-3 py-1 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors border border-purple-500/30"
                     >
-                      Пробный тест →
+                      Пробный экзамен →
                     </Link>
                   )}
                 </div>

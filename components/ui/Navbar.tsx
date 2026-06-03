@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, CreditCard, Brain, Timer, AlertCircle, CheckSquare, LayoutDashboard, ListChecks, Trophy } from "lucide-react";
+import { BookOpen, CreditCard, Brain, Timer, AlertCircle, CheckSquare, LayoutDashboard, ListChecks, Trophy, GraduationCap } from "lucide-react";
 import { LevelBadge } from "./LevelBadge";
 
 const NAV = [
@@ -10,6 +10,7 @@ const NAV = [
   { href: "/lessons", label: "Уроки", icon: BookOpen },
   { href: "/flashcards", label: "Карточки", icon: CreditCard },
   { href: "/exercises", label: "Упражнения", icon: Brain },
+  { href: "/exam", label: "Экзамен", icon: GraduationCap },
   { href: "/achievements", label: "Достижения", icon: Trophy },
   { href: "/timer", label: "Pomodoro", icon: Timer },
   { href: "/error-journal", label: "Ошибки", icon: AlertCircle },

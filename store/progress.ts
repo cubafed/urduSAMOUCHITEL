@@ -57,6 +57,11 @@ export type ProgressStore = {
   // Pomodoro
   pomodoroCount: number;
 
+  // Exam (mock exam mode)
+  examsPassed: number;     // экзамены, сданные на 4–5
+  bestExamGrade: number;   // лучшая оценка (2–5)
+  examHistory: ExamResult[];
+
   // Achievements
   unlockedAchievements: Record<string, number>; // id -> timestamp
   newlyUnlocked: string[]; // queue for toast display
@@ -71,10 +76,27 @@ export type ProgressStore = {
   removeError: (id: string) => void;
   toggleChecklist: (key: string) => void;
   incrementPomodoro: () => void;
+  recordExam: (correct: number, total: number) => ExamResult;
   dismissAchievement: (id: string) => void;
   _award: (xp: number) => Partial<ProgressStore>;
   _checkAchievements: () => void;
 };
+
+export type ExamResult = {
+  date: number;
+  correct: number;
+  total: number;
+  percent: number;
+  grade: number; // 2–5
+};
+
+// Оценка по проценту правильных: как на реальном экзамене
+export function gradeFromPercent(percent: number): number {
+  if (percent >= 90) return 5;
+  if (percent >= 75) return 4;
+  if (percent >= 50) return 3;
+  return 2;
+}
 
 const BOX_INTERVALS: Record<number, number> = {
   1: 0,
@@ -107,6 +129,8 @@ function buildStats(s: ProgressStore): AchievementStats {
     perfectLessons: Object.values(s.perfectLessons).filter(Boolean).length,
     errorsFixed: s.errorsFixed,
     dailyGoalsHit: s.dailyGoalsHit,
+    examsPassed: s.examsPassed,
+    bestExamGrade: s.bestExamGrade,
   };
 }
 
@@ -129,6 +153,9 @@ export const useProgress = create<ProgressStore>()(
       errors: [],
       checklistItems: {},
       pomodoroCount: 0,
+      examsPassed: 0,
+      bestExamGrade: 0,
+      examHistory: [],
       unlockedAchievements: {},
       newlyUnlocked: [],
 
@@ -256,6 +283,23 @@ export const useProgress = create<ProgressStore>()(
       incrementPomodoro: () => {
         set((s) => ({ pomodoroCount: s.pomodoroCount + 1 }));
         get()._checkAchievements();
+      },
+
+      // Фиксируем результат пробного экзамена: оценка, история, XP-бонус
+      recordExam: (correct, total) => {
+        const percent = total > 0 ? Math.round((correct / total) * 100) : 0;
+        const grade = gradeFromPercent(percent);
+        const result: ExamResult = { date: Date.now(), correct, total, percent, grade };
+        // Бонус XP: за сам экзамен + по 5 за каждый правильный ответ
+        const bonus = 30 + correct * 5;
+        set((s) => ({
+          examHistory: [result, ...s.examHistory].slice(0, 20),
+          examsPassed: grade >= 4 ? s.examsPassed + 1 : s.examsPassed,
+          bestExamGrade: Math.max(s.bestExamGrade, grade),
+          ...get()._award(bonus),
+        }));
+        get()._checkAchievements();
+        return result;
       },
 
       dismissAchievement: (id) => {

@@ -62,6 +62,8 @@ export type AchievementStats = {
   perfectLessons: number;  // уроки без ошибок в заданиях
   errorsFixed: number;     // удалённые из журнала (проработанные)
   dailyGoalsHit: number;
+  examsPassed: number;     // экзамены, сданные на 4–5
+  bestExamGrade: number;   // лучшая оценка за экзамен (2–5)
 };
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -80,6 +82,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "pomodoro-10", title: "Фокус", description: "Заверши 10 сессий Pomodoro", icon: "🍅", check: (s) => s.pomodoroCount >= 10 },
   { id: "error-master", title: "Работа над ошибками", description: "Проработай 10 ошибок из журнала", icon: "🔧", check: (s) => s.errorsFixed >= 10 },
   { id: "daily-7", title: "Дисциплина", description: "Выполни дневную цель 7 раз", icon: "📅", check: (s) => s.dailyGoalsHit >= 7 },
+  { id: "exam-passed", title: "Экзамен сдан", description: "Сдай пробный экзамен на 4 или 5", icon: "📝", check: (s) => s.examsPassed >= 1 },
+  { id: "exam-five", title: "Отличник", description: "Сдай пробный экзамен на 5", icon: "🥇", check: (s) => s.bestExamGrade >= 5 },
 ];
 
 export const DAILY_GOAL_XP = 60; // целевые XP в день
